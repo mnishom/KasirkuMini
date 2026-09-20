@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import '../models/models.dart';
 import '../services/katalog_service.dart';
@@ -27,6 +28,20 @@ class KatalogScreen extends StatefulWidget {
 class _KatalogScreenState extends State<KatalogScreen> {
   String _kategoriTerpilih = 'Semua';
 
+  /// [Pertemuan 6 · Mixin] Contoh nyata `ProdukPromo` (extends
+  /// `ProdukMakanan` + `with BisaDiskon`) dipakai langsung di layar ini
+  /// untuk menampilkan banner promo — bukan hanya diuji lewat unit test.
+  /// Produk promo ini sengaja tidak disimpan ke database, hanya untuk
+  /// demonstrasi tampilan harga setelah diskon lewat `hargaPromo`.
+  final ProdukPromo _promoHariIni = ProdukPromo(
+    'PROMO001',
+    'Paket Hemat Combo',
+    'Promo',
+    20000,
+    99,
+    persenPromo: 10,
+  );
+
   @override
   void initState() {
     super.initState();
@@ -52,6 +67,21 @@ class _KatalogScreenState extends State<KatalogScreen> {
     for (final produk in widget.katalogService.katalog) {
       debugPrint('${produk.nama} (${produk.runtimeType}): pajak Rp${produk.hitungPajak()}');
     }
+  }
+
+  Widget _buildBannerPromo() {
+    final formatRupiah = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp', decimalDigits: 0);
+    return Card(
+      margin: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+      color: Colors.teal.shade50,
+      child: ListTile(
+        leading: const Icon(Icons.local_offer),
+        title: Text('${_promoHariIni.nama} — diskon ${_promoHariIni.persenPromo.toStringAsFixed(0)}%'),
+        subtitle: Text(
+          '${formatRupiah.format(_promoHariIni.harga)} → ${formatRupiah.format(_promoHariIni.hargaPromo)}',
+        ),
+      ),
+    );
   }
 
   @override
@@ -87,36 +117,43 @@ class _KatalogScreenState extends State<KatalogScreen> {
           ),
         ),
       ),
-      body: produkDitampilkan.isEmpty
-          ? const Center(child: Text('Belum ada produk di kategori ini'))
-          : GridView.builder(
-              padding: const EdgeInsets.all(12),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                mainAxisSpacing: 12,
-                crossAxisSpacing: 12,
-                childAspectRatio: 0.85,
-              ),
-              itemCount: produkDitampilkan.length,
-              itemBuilder: (context, index) {
-                final produk = produkDitampilkan[index];
-                return ProdukCard(
-                  produk: produk,
-                  onTap: () async {
-                    await Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => DetailProdukScreen(
-                          katalogService: widget.katalogService,
-                          keranjang: widget.keranjang,
-                          onKeranjangBerubah: widget.onKeranjangBerubah,
-                          produk: produk,
-                        ),
-                      ),
-                    );
-                  },
-                );
-              },
-            ),
+      body: Column(
+        children: [
+          _buildBannerPromo(),
+          Expanded(
+            child: produkDitampilkan.isEmpty
+                ? const Center(child: Text('Belum ada produk di kategori ini'))
+                : GridView.builder(
+                    padding: const EdgeInsets.all(12),
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      mainAxisSpacing: 12,
+                      crossAxisSpacing: 12,
+                      childAspectRatio: 0.85,
+                    ),
+                    itemCount: produkDitampilkan.length,
+                    itemBuilder: (context, index) {
+                      final produk = produkDitampilkan[index];
+                      return ProdukCard(
+                        produk: produk,
+                        onTap: () async {
+                          await Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => DetailProdukScreen(
+                                katalogService: widget.katalogService,
+                                keranjang: widget.keranjang,
+                                onKeranjangBerubah: widget.onKeranjangBerubah,
+                                produk: produk,
+                              ),
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
           Navigator.of(context).push(

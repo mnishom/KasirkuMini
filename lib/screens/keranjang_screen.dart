@@ -27,6 +27,12 @@ class KeranjangScreen extends StatefulWidget {
 class _KeranjangScreenState extends State<KeranjangScreen> {
   bool _sedangCheckout = false;
 
+  /// [Pertemuan 4 · Asosiasi] `Kasir` dipakai di sini persis seperti
+  /// relasi asosiasi yang dijelaskan di `models/kasir.dart`: hanya
+  /// "meminjam" [Keranjang] lewat parameter method [Kasir.layani], tidak
+  /// menyimpannya secara permanen.
+  final Kasir _kasir = Kasir('Kasir 1');
+
   double get _totalPajak {
     var total = 0.0;
     for (final produk in widget.keranjang.isi) {
@@ -44,7 +50,7 @@ class _KeranjangScreenState extends State<KeranjangScreen> {
   Future<void> _checkout() async {
     setState(() => _sedangCheckout = true);
     try {
-      final transaksi = widget.keranjang.checkout();
+      final transaksi = _kasir.layani(widget.keranjang);
       await widget.katalogService.simpanTransaksi(transaksi);
       widget.onKeranjangBerubah();
       if (!mounted) return;
