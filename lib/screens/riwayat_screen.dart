@@ -33,7 +33,6 @@ class _RiwayatScreenState extends State<RiwayatScreen> {
   @override
   Widget build(BuildContext context) {
     final formatRupiah = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp', decimalDigits: 0);
-    final formatTanggal = DateFormat('d MMM y, HH:mm', 'id_ID');
 
     return Scaffold(
       appBar: AppBar(
@@ -55,19 +54,67 @@ class _RiwayatScreenState extends State<RiwayatScreen> {
           if (daftar.isEmpty) {
             return const Center(child: Text('Belum ada transaksi'));
           }
+
+          // [Update] Pengelompokkan transaksi berdasarkan tanggal
+          final grouped = <String, List<Map<String, dynamic>>>{};
+          for (final row in daftar) {
+            final waktu = DateTime.parse(row['waktu'] as String);
+            final tanggalKey = DateFormat('yyyy-MM-dd').format(waktu);
+            grouped.putIfAbsent(tanggalKey, () => []).add(row);
+          }
+
+          final keys = grouped.keys.toList();
+
           return ListView.builder(
-            itemCount: daftar.length,
+            itemCount: keys.length,
             itemBuilder: (context, index) {
-              final row = daftar[index];
-              final waktu = DateTime.parse(row['waktu'] as String);
-              return ListTile(
-                leading: const Icon(Icons.receipt_long),
-                title: Text(row['idTransaksi'] as String),
-                subtitle: Text(
-                  '${formatTanggal.format(waktu)} • ${row['jumlahItem']} item',
-                ),
-                trailing: Text(formatRupiah.format((row['total'] as num).toDouble())),
-                onTap: () => _bukaDetailStruk(row['idTransaksi'] as String),
+              final tanggalKey = keys[index];
+              final transaksiHariIni = grouped[tanggalKey]!;
+              final totalHariIni = transaksiHariIni.fold<double>(
+                0,
+                (prev, element) => prev + (element['total'] as num).toDouble(),
+              );
+
+              final tanggalObj = DateTime.parse(tanggalKey);
+              final labelTanggal = DateFormat('EEEE, d MMMM y', 'id_ID').format(tanggalObj);
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: double.infinity,
+                    color: Colors.grey[200],
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          labelTanggal,
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        Text(
+                          formatRupiah.format(totalHariIni),
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.blueAccent,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  ...transaksiHariIni.map((row) {
+                    final waktu = DateTime.parse(row['waktu'] as String);
+                    return ListTile(
+                      leading: const Icon(Icons.receipt_long),
+                      title: Text(row['idTransaksi'] as String),
+                      subtitle: Text(
+                        '${DateFormat('HH:mm').format(waktu)} • ${row['jumlahItem']} item',
+                      ),
+                      trailing: Text(formatRupiah.format((row['total'] as num).toDouble())),
+                      onTap: () => _bukaDetailStruk(row['idTransaksi'] as String),
+                    );
+                  }),
+                ],
               );
             },
           );
