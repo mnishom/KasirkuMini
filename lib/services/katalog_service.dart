@@ -105,4 +105,38 @@ class KatalogService extends ChangeNotifier {
   Future<List<Map<String, dynamic>>> itemUntukTransaksi(String idTransaksi) {
     return _db.getItemUntukTransaksi(idTransaksi);
   }
+
+  /// [Pertemuan 7 · Implicit Interface] Merekonstruksi objek [Transaksi]
+  /// lengkap dari baris-baris database, supaya `riwayat_screen.dart` bisa
+  /// memanggil `cetakStruk()` (kontrak `BisaDicetak`) yang sama persis
+  /// dengan yang dipakai untuk transaksi baru.
+  Future<Transaksi?> transaksiLengkap(String idTransaksi) async {
+    final rowTransaksi = await _db.getTransaksiById(idTransaksi);
+    if (rowTransaksi == null) return null;
+
+    final transaksi = Transaksi(
+      idTransaksi,
+      waktu: DateTime.parse(rowTransaksi['waktu'] as String),
+    );
+
+    final rowsItem = await _db.getItemUntukTransaksi(idTransaksi);
+    for (final rowItem in rowsItem) {
+      final kodeProduk = rowItem['kodeProduk'] as String;
+      Produk produk;
+      try {
+        produk = cariByKode(kodeProduk);
+      } on ProdukTidakDitemukanException {
+        // Produk sudah dihapus dari katalog: pakai placeholder minimal
+        // supaya struk lama tetap bisa ditampilkan.
+        produk = ProdukMakanan(kodeProduk, rowItem['namaSaatTransaksi'] as String, '-', 0, 0);
+      }
+      transaksi.tambahItem(
+        produk,
+        rowItem['jumlah'] as int,
+        namaOverride: rowItem['namaSaatTransaksi'] as String,
+        hargaOverride: rowItem['hargaSaatTransaksi'] as double,
+      );
+    }
+    return transaksi;
+  }
 }

@@ -17,9 +17,16 @@ class ItemTransaksi {
   final String namaSaatTransaksi;
   final double hargaSaatTransaksi;
 
-  ItemTransaksi(this.produk, this.jumlah)
-      : namaSaatTransaksi = produk.nama,
-        hargaSaatTransaksi = produk.harga;
+  /// [Pertemuan 3 · Optional Named Parameter] `namaOverride`/`hargaOverride`
+  /// hanya dipakai saat merekonstruksi item LAMA dari database (lihat
+  /// `KatalogService.transaksiLengkap`), supaya nama & harga yang tampil
+  /// tetap sesuai catatan historis meski data produk di katalog sudah
+  /// berubah sejak transaksi itu terjadi. Untuk transaksi baru dari
+  /// checkout, kedua parameter ini diabaikan dan nilainya diambil
+  /// langsung dari `produk` saat ini.
+  ItemTransaksi(this.produk, this.jumlah, {String? namaOverride, double? hargaOverride})
+      : namaSaatTransaksi = namaOverride ?? produk.nama,
+        hargaSaatTransaksi = hargaOverride ?? produk.harga;
 
   double get subtotal => hargaSaatTransaksi * jumlah;
 

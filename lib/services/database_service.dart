@@ -222,6 +222,20 @@ class DatabaseService {
     }
   }
 
+  Future<Map<String, dynamic>?> getTransaksiById(String idTransaksi) async {
+    try {
+      final db = await database;
+      final rows = await db.query(
+        'transaksi',
+        where: 'idTransaksi = ?',
+        whereArgs: [idTransaksi],
+      );
+      return rows.isEmpty ? null : rows.first;
+    } catch (e) {
+      throw Exception('Gagal membaca transaksi: $e');
+    }
+  }
+
   Future<List<Map<String, dynamic>>> getItemUntukTransaksi(String idTransaksi) async {
     try {
       final db = await database;

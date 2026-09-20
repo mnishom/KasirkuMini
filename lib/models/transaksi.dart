@@ -20,16 +20,28 @@ class Transaksi implements BisaDicetak {
   final DateTime waktu;
   final List<ItemTransaksi> _items = [];
 
-  Transaksi(this.idTransaksi) : waktu = DateTime.now();
+  /// [Pertemuan 3 · Optional Named Parameter] `waktu` biasanya diisi
+  /// otomatis dengan waktu saat ini (transaksi baru dari checkout), tapi
+  /// boleh diisi manual saat merekonstruksi transaksi LAMA dari database
+  /// (lihat `KatalogService.transaksiLengkap`) supaya struknya tetap
+  /// menunjukkan waktu transaksi yang asli, bukan waktu saat dibuka.
+  Transaksi(this.idTransaksi, {DateTime? waktu}) : waktu = waktu ?? DateTime.now();
 
   /// Daftar item hanya boleh DIBACA dari luar lewat getter tak-mutable ini,
   /// bukan diubah langsung — mempertahankan aturan komposisi di atas.
   List<ItemTransaksi> get items => List.unmodifiable(_items);
 
   /// Satu-satunya cara menambah item ke transaksi ini: `Transaksi` sendiri
-  /// yang membuat objek `ItemTransaksi`-nya.
-  void tambahItem(Produk produk, int jumlah) {
-    _items.add(ItemTransaksi(produk, jumlah));
+  /// yang membuat objek `ItemTransaksi`-nya. `namaOverride`/`hargaOverride`
+  /// diteruskan ke [ItemTransaksi] hanya saat merekonstruksi transaksi lama
+  /// dari database.
+  void tambahItem(Produk produk, int jumlah, {String? namaOverride, double? hargaOverride}) {
+    _items.add(ItemTransaksi(
+      produk,
+      jumlah,
+      namaOverride: namaOverride,
+      hargaOverride: hargaOverride,
+    ));
   }
 
   double get totalHarga => _items.fold(0.0, (sum, item) => sum + item.subtotal);
